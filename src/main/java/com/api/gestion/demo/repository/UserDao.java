@@ -1,4 +1,4 @@
-package com.api.gestion.demo.dao;
+package com.api.gestion.demo.repository;
 
 import com.api.gestion.demo.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;

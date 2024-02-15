@@ -1,7 +1,7 @@
-package com.api.gestion.demo.servicios;
+package com.api.gestion.demo.service;
 
 import com.api.gestion.demo.constantes.FacturaConstantes;
-import com.api.gestion.demo.dao.UserDao;
+import com.api.gestion.demo.repository.UserDao;
 import com.api.gestion.demo.user.User;
 import com.api.gestion.demo.utils.FacturaUtils;
 import lombok.extern.slf4j.Slf4j;

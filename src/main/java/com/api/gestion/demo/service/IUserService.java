@@ -1,6 +1,5 @@
-package com.api.gestion.demo.servicios;
+package com.api.gestion.demo.service;
 
-import com.api.gestion.demo.user.User;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
