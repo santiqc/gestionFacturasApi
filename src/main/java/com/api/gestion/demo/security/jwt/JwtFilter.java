@@ -1,5 +1,6 @@
 package com.api.gestion.demo.security.jwt;
 
+import com.api.gestion.demo.security.CustomerDetailsService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
