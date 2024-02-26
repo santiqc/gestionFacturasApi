@@ -1,4 +1,4 @@
-package com.api.gestion.demo.user;
+package com.api.gestion.demo.utils;
 
 public enum Role {
     ADMIN,

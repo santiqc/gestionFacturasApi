@@ -1,9 +1,10 @@
 package com.api.gestion.demo.security.controller;
 
-import com.api.gestion.demo.constantes.FacturaConstantes;
-import com.api.gestion.demo.security.service.AuthService;
-import com.api.gestion.demo.utils.FacturaUtils;
-import lombok.RequiredArgsConstructor;
+
+import com.api.gestion.demo.dto.LoginDTO;
+import com.api.gestion.demo.entitys.UserEntity;
+import com.api.gestion.demo.security.service.IAuthService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,34 +13,28 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import java.util.HashMap;
+
 
 @RestController
 @RequestMapping("/auth")
-@RequiredArgsConstructor
 public class AuthController {
 
     @Autowired
-    private AuthService userService;
+    private IAuthService authService;
 
-
-    @PostMapping("/sign-up")
-    public final ResponseEntity<String> signUp(@RequestBody Map<String, String> requestMap) {
-        try {
-            return userService.singUp(requestMap);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return FacturaUtils.getResponseEntity(FacturaConstantes.ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
+    @PostMapping("/register")
+    private ResponseEntity<HashMap<String, String>> addUser(@RequestBody UserEntity user) throws Exception {
+        return new ResponseEntity<>(authService.register(user), HttpStatus.OK);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody Map<String, String> requestMap) {
-        try {
-            return userService.login(requestMap);
-        } catch (Exception e) {
-            e.printStackTrace();
+    private ResponseEntity<HashMap<String, String>> login(@RequestBody LoginDTO loginRequest) throws Exception {
+        HashMap<String, String> login = authService.login(loginRequest);
+        if (login.containsKey("jwt")) {
+            return new ResponseEntity<>(authService.login(loginRequest), HttpStatus.ACCEPTED);
+        } else {
+            return new ResponseEntity<>(authService.login(loginRequest), HttpStatus.UNAUTHORIZED);
         }
-        return FacturaUtils.getResponseEntity(FacturaConstantes.ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

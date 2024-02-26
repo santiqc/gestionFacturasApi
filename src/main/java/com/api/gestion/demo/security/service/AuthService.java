@@ -1,131 +1,76 @@
 package com.api.gestion.demo.security.service;
 
-import com.api.gestion.demo.user.IUserRepository;
-import com.api.gestion.demo.security.jwt.JwtUtilService;
-import com.api.gestion.demo.user.User;
-import com.api.gestion.demo.user.Role;
-import com.api.gestion.demo.utils.FacturaUtils;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import com.api.gestion.demo.dto.LoginDTO;
+import com.api.gestion.demo.entitys.UserEntity;
+import com.api.gestion.demo.security.repository.IUserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.Objects;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class AuthService implements IAuthService {
 
-    private final IUserRepository userRepository;
-    private final JwtUtilService jwtService;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
+    @Autowired
+    private IUserRepository userRepository;
 
-    //    @Override
-//    public ResponseEntity<String> singUp(Map<String, String> requestmap) {
-//        try {
-//            log.info("Registro interno de un usuario {} : " + requestmap);
-//
-//            if (validateSingUpMap(requestmap)) {
-//                User user = userDao.finByEmail(requestmap.get("email"));
-//                if (Objects.isNull(user)) {
-//                    user = userDao.save(getUserFromMap(requestmap));
-//                    return FacturaUtils.getResponseEntity("Usuario creado exitosamente!," +
-//                            "Token:" +
-//                            jwtUtil.generateToken(user.getEmail(), user.getRole()), HttpStatus.CREATED);
-//                } else {
-//                    return FacturaUtils.getResponseEntity("El usuario con ese email ya existe", HttpStatus.BAD_REQUEST);
-//                }
-//            } else {
-//                return FacturaUtils.getResponseEntity(FacturaConstantes.DATOS_INVALIDOS, HttpStatus.INTERNAL_SERVER_ERROR);
-//            }
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//        return FacturaUtils.getResponseEntity(FacturaConstantes.ERROR, HttpStatus.INTERNAL_SERVER_ERROR);
-//    }
-    @Override
-    public ResponseEntity<String> singUp(Map<String, String> requestmap) {
-        User user = User.builder()
-                .nombre(requestmap.get("nombre"))
-                .numeroDeContacto(requestmap.get("numeroDeContacto"))
-                .email(requestmap.get("email"))
-                .password(passwordEncoder.encode(requestmap.get("password")))
-                .status("false")
-                .role(Role.USER)
-                .build();
-
-        userRepository.save(user);
-
-        return FacturaUtils.getResponseEntity("Usuario creado exitosamente!," +
-                "Token:" +
-                jwtService.getToken(user), HttpStatus.CREATED);
-
-    }
-
+    @Autowired
+    private IJwtUtilService jwtUtilityService;
 
     @Override
-    public ResponseEntity<String> login(Map<String, String> requestmap) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(requestmap.get("email"), requestmap.get("password")));
-        User user = userRepository.finByEmail(requestmap.get("email")).orElse(null);
-        String token = jwtService.getToken(user);
-        return FacturaUtils.getResponseEntity("Usuario logueado exitosamente!," +
-                "Token:" +
-                token, HttpStatus.CREATED);
+    public HashMap<String, String> login(LoginDTO loginRequest) throws Exception {
+        try {
+            HashMap<String, String> jwt = new HashMap<>();
+            Optional<UserEntity> user = userRepository.findByEmail(loginRequest.getEmail());
 
+            if (user.isEmpty()) {
+                jwt.put("error", "User not registered!");
+                return jwt;
+            }
+            if (verifyPassword(loginRequest.getPassword(), user.get().getPassword())) {
+                jwt.put("jwt", jwtUtilityService.generateJWT(user.get().getId()));
+            } else {
+                jwt.put("error", "Authentication failed");
+            }
+            return jwt;
+        } catch (IllegalArgumentException e) {
+            System.err.println("Error generating JWT: " + e.getMessage());
+            throw new Exception("Error generating JWT", e);
+        } catch (Exception e) {
+            System.err.println("Unknown error: " + e.toString());
+            throw new Exception("Unknown error", e);
+        }
     }
 
-//    @Override
-//    public ResponseEntity<String> login(Map<String, String> requestmap) {
-//        log.info("Dentro de login");
-//        try {
-//            Authentication authentication = authenticationManager.authenticate(
-//                    new UsernamePasswordAuthenticationToken(requestmap.get("email"), requestmap.get("password"))
-//            );
-//
-//            if (authentication.isAuthenticated()) {
-//                if (customerDetailsService.getUserDetail().getStatus().equalsIgnoreCase("true")) {
-//                    return new ResponseEntity<String>(
-//                            "{\"token\":\"" + jwtUtil.generateToken(customerDetailsService.getUserDetail().getEmail(),
-//                                    customerDetailsService.getUserDetail().getRole()) + "\"}",
-//                            HttpStatus.OK
-//                    );
-//                } else {
-//                    return new ResponseEntity<String>("Espera la aprobaciond el administrador", HttpStatus.BAD_REQUEST);
-//                }
-//            }
-//        } catch (Exception e) {
-//            log.error("{}", e);
-//        }
-//        return new ResponseEntity<String>("Credenciales incorrectas", HttpStatus.BAD_REQUEST);
-//    }
-//
-//    private Boolean validateSingUpMap(Map<String, String> requestmap) {
-//        if (requestmap.containsKey("nombre") &&
-//                requestmap.containsKey("numeroDeContacto") &&
-//                requestmap.containsKey("email") &&
-//                requestmap.containsKey("password")) {
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    private User getUserFromMap(Map<String, String> requestmap) {
-//        User user = new User();
-//        user.setNombre(requestmap.get("nombre"));
-//        user.setNumeroDeContacto(requestmap.get("numeroDeContacto"));
-//        user.setEmail(requestmap.get("email"));
-//        user.setPassword(passwordEncoder.encode(requestmap.get("password")));
-//        user.setStatus("false");
-//        user.setRole(Role.USER);
-//        return user;
-//    }
+    @Override
+    public HashMap<String, String> register(UserEntity user) throws Exception {
+        try {
+            HashMap<String, String> response = new HashMap<>();
+            List<UserEntity> getAllUsers = userRepository.findAll();
+
+            for (UserEntity repeatFields : getAllUsers) {
+                if (repeatFields != null) {
+                    response.put("message", "User already exists!");
+                    return response;
+                }
+            }
+
+            BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
+            user.setPassword(encoder.encode(user.getPassword()));
+
+            userRepository.save(user);
+            response.put("message", "User created successfully!");
+            return response;
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
+    private boolean verifyPassword(String enteredPassword, String storedPassword) {
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        return encoder.matches(enteredPassword, storedPassword);
+    }
 }
