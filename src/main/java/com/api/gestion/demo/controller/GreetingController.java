@@ -9,7 +9,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class GreetingController {
 
     @GetMapping("/sayHello")
-    public String SayHello(){
+    public String SayHello() {
         return "Hello from Api Santi";
+    }
+
+    @GetMapping("/sayHelloProtect")
+    public String SayHelloProtect() {
+        return "Hello from Api Santi SayHelloProtect";
     }
 }
